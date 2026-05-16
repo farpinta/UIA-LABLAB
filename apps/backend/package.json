@@ -20,7 +20,7 @@
     "axios-retry": "^4.0.0",
     "bottleneck": "^2.19.5",
     "dotenv": "^16.3.1",
-    "fastify": "^4.25.2",
+    "fastify": "^5.8.5",
     "node-cache": "^5.1.2",
     "simple-git": "^3.22.0"
   },
