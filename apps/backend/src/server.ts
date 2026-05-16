@@ -31,11 +31,15 @@ async function createServer() {
     requestIdLogLabel: 'reqId'
   });
 
-  // Register CORS
+  // Register CORS with proper preflight handling
   await fastify.register(cors, {
-    origin: [FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000'],
+    origin: true, // Allow all origins in development
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['X-Request-Id'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
   // Register rate limiting

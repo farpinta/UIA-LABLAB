@@ -34,5 +34,8 @@
     "hackathon"
   ],
   "author": "BobInsight Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^25.8.0"
+  }
 }

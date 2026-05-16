@@ -46,10 +46,21 @@ apiClient.interceptors.response.use(
     
     if (error.response) {
       // Server responded with error status
-      console.error('[API] Error response:', error.response.data);
+      console.error('[API] Error response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
     } else if (error.request) {
-      // Request made but no response
-      console.error('[API] No response received');
+      // Request made but no response - possible CORS or network issue
+      console.error('[API] No response received - possible CORS or network issue');
+      console.error('[API] Request details:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL
+      });
+    } else {
+      console.error('[API] Error setting up request:', error.message);
     }
     
     return Promise.reject(error);
