@@ -1,0 +1,45 @@
+{
+  "nodes": [
+    {
+      "id": "f1",
+      "fileName": "src/auth.js",
+      "functions": ["login", "verify"]
+    },
+    {
+      "id": "f2",
+      "fileName": "src/db.js",
+      "functions": ["getUser", "saveSession"]
+    },
+    {
+      "id": "f3",
+      "fileName": "src/router.js",
+      "functions": ["initRoutes"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceFile": "src/auth.js",
+      "sourceFunction": "login",
+      "targetFile": "src/db.js",
+      "targetFunction": "getUser",
+      "description": "Fetches user record for credential validation"
+    },
+    {
+      "id": "e2",
+      "sourceFile": "src/auth.js",
+      "sourceFunction": "verify",
+      "targetFile": "src/db.js",
+      "targetFunction": "saveSession",
+      "description": "Persists verified session token"
+    },
+    {
+      "id": "e3",
+      "sourceFile": "src/router.js",
+      "sourceFunction": "initRoutes",
+      "targetFile": "src/auth.js",
+      "targetFunction": "login",
+      "description": "Mounts login handler on POST /login"
+    }
+  ]
+}
