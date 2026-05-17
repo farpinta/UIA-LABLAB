@@ -20,47 +20,55 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor for logging
+ * Request interceptor for logging (development only)
  */
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    if (import.meta.env.DEV) {
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
   (error) => {
-    console.error('[API] Request error:', error);
+    if (import.meta.env.DEV) {
+      console.error('[API] Request error:', error);
+    }
     return Promise.reject(error);
   }
 );
 
 /**
- * Response interceptor for error handling
+ * Response interceptor for error handling (development only)
  */
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[API] Response ${response.status} from ${response.config.url}`);
+    if (import.meta.env.DEV) {
+      console.log(`[API] Response ${response.status} from ${response.config.url}`);
+    }
     return response;
   },
   (error: AxiosError) => {
-    console.error('[API] Response error:', error.message);
-    
-    if (error.response) {
-      // Server responded with error status
-      console.error('[API] Error response:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers
-      });
-    } else if (error.request) {
-      // Request made but no response - possible CORS or network issue
-      console.error('[API] No response received - possible CORS or network issue');
-      console.error('[API] Request details:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        baseURL: error.config?.baseURL
-      });
-    } else {
-      console.error('[API] Error setting up request:', error.message);
+    if (import.meta.env.DEV) {
+      console.error('[API] Response error:', error.message);
+      
+      if (error.response) {
+        // Server responded with error status
+        console.error('[API] Error response:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        // Request made but no response - possible CORS or network issue
+        console.error('[API] No response received - possible CORS or network issue');
+        console.error('[API] Request details:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        });
+      } else {
+        console.error('[API] Error setting up request:', error.message);
+      }
     }
     
     return Promise.reject(error);
