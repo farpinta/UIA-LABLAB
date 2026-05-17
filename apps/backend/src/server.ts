@@ -21,7 +21,13 @@ console.log('DEBUG: Current Directory:', process.cwd());
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// Support multiple frontend origins (development + production)
+const FRONTEND_URLS = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['http://localhost:5173'];
+
+console.log('DEBUG: Allowed CORS origins:', FRONTEND_URLS);
 
 /**
  * Creates and configures Fastify server
@@ -37,12 +43,36 @@ async function createServer() {
     requestTimeout: 120000 // 2 minutes for large repo analysis
   });
 
-  // Register CORS
+  // Register CORS with dynamic origin validation
   await fastify.register(cors, {
-    origin: FRONTEND_URL, 
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Check if origin is in allowed list
+      const isAllowed = FRONTEND_URLS.some(allowedOrigin => {
+        // Exact match
+        if (origin === allowedOrigin) return true;
+        
+        // Pattern match for wildcard subdomains (e.g., *.pinont.me)
+        const pattern = allowedOrigin.replace(/\*/g, '.*');
+        const regex = new RegExp(`^${pattern}$`);
+        return regex.test(origin);
+      });
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     exposedHeaders: ['X-Request-Id'],
     preflightContinue: false,
     optionsSuccessStatus: 204
