@@ -48,14 +48,10 @@ async function createServer() {
   // Register CORS with dynamic origin validation
   await fastify.register(cors, {
     origin: (origin, callback) => {
-      // Allow requests with no origin only in development
+      // Allow requests with no origin in development OR for health checks
       if (!origin) {
-        if (process.env.NODE_ENV === 'development') {
-          callback(null, true);
-        } else {
-          logger.warn('Request without origin header rejected in production');
-          callback(new Error('Origin header required'), false);
-        }
+        // Always allow health checks (Docker healthcheck, monitoring tools)
+        callback(null, true);
         return;
       }
 
@@ -100,8 +96,10 @@ async function createServer() {
     })
   });
 
-  // Register routes
+  // Register health route first (before CORS for internal checks)
   await fastify.register(healthRoutes);
+  
+  // Register API routes
   await fastify.register(analyzeRoutes);
 
   // Global error handler

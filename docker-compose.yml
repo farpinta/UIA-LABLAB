@@ -13,7 +13,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173,http://frontend:80}
       - WATSONX_BASE_URL=${WATSONX_BASE_URL}
       - IBM_CLOUD_API_KEY=${IBM_CLOUD_API_KEY}
       - WATSONX_PROJECT_ID=${WATSONX_PROJECT_ID}
@@ -40,10 +40,12 @@ services:
       context: .
       dockerfile: apps/frontend/Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3000}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://backend:3000}
     container_name: bobinsight-frontend
     ports:
       - "5173:80"
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://backend:3000}
     depends_on:
       backend:
         condition: service_healthy

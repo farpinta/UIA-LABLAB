@@ -89,21 +89,49 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!graphData && !loading && (
-          <RepoInput onSubmit={handleAnalyze} loading={loading} />
+        {!graphData && (
+          <>
+            <RepoInput onSubmit={handleAnalyze} loading={loading} />
+            {loading && (
+              <div className="mt-8">
+                <LoadingState />
+              </div>
+            )}
+          </>
         )}
 
-        {loading && <LoadingState />}
-
         {error && (
-          <div className="card max-w-2xl mx-auto bg-red-50 border border-red-200">
+          <div className={`card max-w-2xl mx-auto ${
+            error.includes('Rate Limit') || error.includes('⏱️')
+              ? 'bg-yellow-50 border border-yellow-200'
+              : 'bg-red-50 border border-red-200'
+          }`}>
             <div className="flex items-start space-x-3">
-              <svg className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              {error.includes('Rate Limit') || error.includes('⏱️') ? (
+                <svg className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-red-900 mb-1">Analysis Failed</h3>
-                <p className="text-red-700">{error}</p>
+                <h3 className={`text-lg font-semibold mb-1 ${
+                  error.includes('Rate Limit') || error.includes('⏱️')
+                    ? 'text-yellow-900'
+                    : 'text-red-900'
+                }`}>
+                  {error.includes('Rate Limit') || error.includes('⏱️') ? 'Rate Limit Reached' : 'Analysis Failed'}
+                </h3>
+                <p className={error.includes('Rate Limit') || error.includes('⏱️') ? 'text-yellow-700' : 'text-red-700'}>
+                  {error}
+                </p>
+                {(error.includes('Rate Limit') || error.includes('⏱️')) && (
+                  <p className="text-sm text-yellow-600 mt-2">
+                    💡 The system will automatically use cached or demo data to show you an example visualization.
+                  </p>
+                )}
                 <button
                   onClick={handleReset}
                   className="mt-4 btn btn-secondary text-sm"

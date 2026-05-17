@@ -98,8 +98,14 @@ async function getIBMCloudToken(): Promise<string> {
       message: error.message
     });
 
+    // Check for disabled API key (rate limit)
+    const errorMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    if (errorMessage && errorMessage.includes('Provided API key is disabled')) {
+      throw new ExternalServiceError('RATE_LIMIT_EXCEEDED');
+    }
+
     throw new ExternalServiceError(
-      `IBM IAM authentication failed: ${error.response?.data?.errorMessage || error.response?.data?.message || error.message}`
+      `IBM IAM authentication failed: ${errorMessage}`
     );
   }
 }
@@ -307,6 +313,11 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
       fileCount: files.length,
       successRate: getApiSuccessRate()
     });
+
+    // Check if this is a rate limit error
+    if (error.message === 'RATE_LIMIT_EXCEEDED') {
+      throw error; // Re-throw to preserve the rate limit error
+    }
 
     try {
       return await loadMockFallback();

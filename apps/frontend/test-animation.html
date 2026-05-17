@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Test</title>
+    <style>
+        @keyframes pulse-dot {
+            0%, 100% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .animate-pulse-dot {
+            animation: pulse-dot 1.4s ease-in-out infinite;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f3f4f6;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .dots {
+            display: flex;
+            margin-left: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="margin-bottom: 1rem;">Animation Test</h2>
+        <button>
+            <div class="spinner"></div>
+            <span>
+                Analyzing
+                <span class="dots">
+                    <span class="animate-pulse-dot" style="animation-delay: 0ms;">.</span>
+                    <span class="animate-pulse-dot" style="animation-delay: 200ms;">.</span>
+                    <span class="animate-pulse-dot" style="animation-delay: 400ms;">.</span>
+                </span>
+            </span>
+        </button>
+    </div>
+</body>
+</html>

@@ -15,7 +15,14 @@ export function LoadingState({ message = 'Analyzing repository...' }: LoadingSta
       </div>
       
       <div className="text-center space-y-2">
-        <p className="text-lg font-medium text-gray-700">{message}</p>
+        <p className="text-lg font-medium text-gray-700 flex items-center justify-center">
+          {message}
+          <span className="flex ml-1">
+            <span className="animate-pulse-dot" style={{ animationDelay: '0ms' }}>.</span>
+            <span className="animate-pulse-dot" style={{ animationDelay: '200ms' }}>.</span>
+            <span className="animate-pulse-dot" style={{ animationDelay: '400ms' }}>.</span>
+          </span>
+        </p>
         <p className="text-sm text-gray-500">This may take a few moments...</p>
       </div>
 

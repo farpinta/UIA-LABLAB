@@ -95,6 +95,12 @@ export async function analyzeRoutes(fastify: FastifyInstance) {
           bobResponse = await (Promise.race([analysisPromise, timeoutPromise]) as Promise<BobApiResponse>);
           
         } catch (error: any) {
+          // Check if this is a rate limit error
+          if (error.message === 'RATE_LIMIT_EXCEEDED') {
+            logger.error('Rate limit exceeded', { error: error.message });
+            throw new ExternalServiceError('API rate limit exceeded. Please try again later.');
+          }
+          
           logger.warn('IBM Bob API failed, using fallback', { error: error.message });
           bobResponse = await loadMockFallback();
           source = 'fallback-mock';

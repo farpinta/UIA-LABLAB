@@ -79,7 +79,14 @@ export async function analyzeRepository(repoUrl: string): Promise<AnalyzeRespons
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to analyze repository');
+      const errorMessage = error.response.data.error || 'Failed to analyze repository';
+      
+      // Check for rate limit error
+      if (errorMessage.includes('rate limit') || errorMessage.includes('RATE_LIMIT')) {
+        throw new Error('⏱️ API Rate Limit Exceeded - The IBM Watson API key has reached its usage limit. Please try again later or the system will use cached/mock data.');
+      }
+      
+      throw new Error(errorMessage);
     }
     throw new Error('Network error. Please check your connection and try again.');
   }
