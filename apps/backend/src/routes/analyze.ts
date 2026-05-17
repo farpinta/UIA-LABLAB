@@ -4,7 +4,7 @@
  */
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { AnalyzeRequest, AnalyzeResponse } from '@bobinsight/shared-types';
+import { AnalyzeRequest, AnalyzeResponse, BobApiResponse } from '@bobinsight/shared-types';
 import { processGitHubUrl } from '../utils/urlValidator';
 import { cloneRepository, extractFiles, cleanup } from '../services/gitService';
 import { analyzeWithBobApi, loadMockFallback, getApiSuccessRate } from '../services/bobApiService';
@@ -13,16 +13,12 @@ import { getCachedAnalysis, setCachedAnalysis } from '../services/cacheService';
 import { logger } from '../utils/logger';
 import { ValidationError, ExternalServiceError } from '../utils/errorHandler';
 
-interface AnalyzeRequestBody {
-  repoUrl: string;
-}
-
 export async function analyzeRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/analyze
    * Analyzes a GitHub repository and returns function flow graph
    */
-  fastify.post<{ Body: AnalyzeRequestBody }>(
+  fastify.post<{ Body: AnalyzeRequest }>(
     '/api/analyze',
     {
       schema: {
@@ -35,9 +31,13 @@ export async function analyzeRoutes(fastify: FastifyInstance) {
         }
       }
     },
-    async (request: FastifyRequest<{ Body: AnalyzeRequestBody }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Body: AnalyzeRequest }>, reply: FastifyReply) => {
       const { repoUrl } = request.body;
       let clonePath: string | null = null;
+      
+      // ระบุ Type ให้ชัดเจนเพื่อแก้ Error 2345
+      let bobResponse: BobApiResponse; 
+      let source: AnalyzeResponse['source'] = 'ibm-bob';
 
       try {
         logger.info('Analysis request received', { repoUrl });
@@ -79,29 +79,23 @@ export async function analyzeRoutes(fastify: FastifyInstance) {
         });
 
         // Step 5: Analyze with IBM Bob API (with fallback logic)
-        let bobResponse;
-        let source: AnalyzeResponse['source'] = 'ibm-bob';
-
         try {
-          // Check API success rate for Fallback C
           const successRate = getApiSuccessRate();
           
           if (successRate < 0.8 && successRate > 0) {
             logger.warn('API success rate below 80%, considering fallback', { successRate });
           }
 
-          // Try IBM Bob API with timeout
           const analysisPromise = analyzeWithBobApi(files);
-          const timeoutPromise = new Promise((_, reject) => 
+          const timeoutPromise = new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error('Analysis timeout')), 15000)
           );
 
-          bobResponse = await Promise.race([analysisPromise, timeoutPromise]);
+          // ใช้ Type Assertion เพื่อยืนยันข้อมูลจาก Promise.race
+          bobResponse = await (Promise.race([analysisPromise, timeoutPromise]) as Promise<BobApiResponse>);
           
         } catch (error: any) {
           logger.warn('IBM Bob API failed, using fallback', { error: error.message });
-          
-          // Fallback A: Load mock data
           bobResponse = await loadMockFallback();
           source = 'fallback-mock';
         }
@@ -125,29 +119,19 @@ export async function analyzeRoutes(fastify: FastifyInstance) {
           timestamp: new Date().toISOString()
         };
 
-        logger.info('Analysis completed successfully', {
-          repoUrl: validatedUrl,
-          source,
-          nodeCount: graphData.nodes.length,
-          edgeCount: graphData.edges.length
-        });
-
         return reply.status(200).send(response);
 
       } catch (error: any) {
         logger.error('Analysis failed', error, { repoUrl });
 
-        // If it's a validation error, throw it
         if (error instanceof ValidationError) {
           throw error;
         }
 
-        // For other errors, try to return fallback data
         try {
           logger.info('Attempting to return fallback data due to error');
-          
-          const bobResponse = await loadMockFallback();
-          const graphData = transformToGraphData(bobResponse);
+          const fbResponse = await loadMockFallback();
+          const graphData = transformToGraphData(fbResponse);
 
           const response: AnalyzeResponse = {
             success: true,
@@ -163,7 +147,6 @@ export async function analyzeRoutes(fastify: FastifyInstance) {
         }
 
       } finally {
-        // Always cleanup cloned repository
         if (clonePath) {
           await cleanup(clonePath);
         }

@@ -40,9 +40,9 @@ export function transformToGraphData(bobResponse: BobApiResponse): GraphData {
     const nodeMap = new Map<string, GraphNode>();
 
     // First pass: Create nodes
-    bobResponse.files.forEach((file) => {
+    bobResponse.files.forEach((file: any) => {
       const nodeId = generateNodeId(file.name);
-      const functionNames = file.functions.map(f => f.name);
+      const functionNames = file.functions.map((f: any)=> f.name);
 
       const node: GraphNode = {
         id: nodeId,

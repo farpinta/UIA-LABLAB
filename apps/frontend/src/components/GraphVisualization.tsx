@@ -15,13 +15,48 @@ import ReactFlow, {
   ConnectionLineType,
   MarkerType,
 } from 'reactflow';
+// @ts-ignore
 import 'reactflow/dist/style.css';
 import { GraphData, GraphNode as GraphNodeType } from '@bobinsight/shared-types';
 import { useGraphStore } from '../hooks/useGraphStore';
+import dagre from 'dagre';
 
 interface GraphVisualizationProps {
   data: GraphData;
 }
+
+const dagreGraph = new dagre.graphlib.Graph();
+dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
+  const nodeWidth = 250;
+  const nodeHeight = 100;
+  
+  dagreGraph.setGraph({ rankdir: direction });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  nodes.forEach((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.targetPosition = isHorizontal ? Position.Left : Position.Top;
+    node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
+    // เลื่อนตำแหน่งให้จุดศูนย์กลางตรงกัน
+    node.position = {
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - nodeHeight / 2,
+    };
+  });
+
+  return { nodes, edges };
+};
 
 export function GraphVisualization({ data }: GraphVisualizationProps) {
   const { selectNode, selectEdge } = useGraphStore();

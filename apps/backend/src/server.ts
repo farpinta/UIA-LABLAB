@@ -2,7 +2,7 @@
  * BobInsight Backend Server
  * Fastify + TypeScript API Server
  */
-
+import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -11,10 +11,13 @@ import { healthRoutes } from './routes/health';
 import { analyzeRoutes } from './routes/analyze';
 import { errorHandler } from './utils/errorHandler';
 import { logger } from './utils/logger';
-import { preloadDemoCache, cleanupOldRepos } from './services/cacheService';
+import { preloadDemoCache } from './services/cacheService'; 
+import { cleanupOldRepos } from './services/gitService';   
 
 // Load environment variables
 config();
+console.log('DEBUG: API Key exists?', !!process.env.IBM_BOB_API_KEY);
+console.log('DEBUG: Current Directory:', process.cwd());
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -25,15 +28,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
  */
 async function createServer() {
   const fastify = Fastify({
-    logger: false, // Using custom logger
+    logger: false, 
     trustProxy: true,
     requestIdHeader: 'x-request-id',
     requestIdLogLabel: 'reqId'
   });
 
-  // Register CORS with proper preflight handling
+  // Register CORS
   await fastify.register(cors, {
-    origin: true, // Allow all origins in development
+    origin: FRONTEND_URL, 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -59,12 +62,12 @@ async function createServer() {
   await fastify.register(analyzeRoutes);
 
   // Global error handler
-  fastify.setErrorHandler((error, request, reply) => {
-    errorHandler(error, reply);
+  fastify.setErrorHandler((error, _request, reply) => { 
+    errorHandler(error as Error, reply); 
   });
 
   // 404 handler
-  fastify.setNotFoundHandler((request, reply) => {
+  fastify.setNotFoundHandler((_request, reply) => { 
     reply.status(404).send({
       success: false,
       error: 'Route not found',
@@ -83,13 +86,10 @@ async function start() {
   try {
     logger.info('Starting BobInsight Backend Server...');
 
-    // Preload demo cache for fallback
-    preloadDemoCache();
+    //preloadDemoCache();
 
-    // Create server
     const server = await createServer();
 
-    // Start listening
     await server.listen({ port: PORT, host: HOST });
 
     logger.info('Server started successfully', {
@@ -100,7 +100,7 @@ async function start() {
 
     // Setup cleanup interval (every hour)
     setInterval(() => {
-      cleanupOldRepos().catch(error => {
+      cleanupOldRepos().catch((error: any) => { 
         logger.error('Failed to cleanup old repos', error);
       });
     }, 60 * 60 * 1000);
@@ -128,8 +128,7 @@ async function start() {
   }
 }
 
-// Start server if this file is run directly
-if (require.main === module) {
+if (typeof require !== 'undefined' && require.main === module) {
   start();
 }
 
