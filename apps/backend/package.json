@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "BobInsight Backend API - Fastify + TypeScript",
   "main": "dist/server.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/apps/backend/src/server.js",
     "lint": "eslint src --ext .ts",
     "test": "jest",
     "clean": "rm -rf dist"

@@ -14,7 +14,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
    * GET /health
    * Returns health status of the service
    */
-  fastify.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/health', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const cacheStats = getCacheStats();
       const apiHealthy = await checkApiHealth();
