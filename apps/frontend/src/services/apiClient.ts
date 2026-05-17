@@ -6,7 +6,23 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { AnalyzeRequest, AnalyzeResponse, HealthResponse } from '@bobinsight/shared-types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+// Determine API base URL based on environment
+const getApiBaseUrl = (): string => {
+  // 1. Use explicit environment variable if set
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // 2. In production, use relative path (same origin)
+  if (import.meta.env.PROD) {
+    return window.location.origin;
+  }
+  
+  // 3. Development fallback
+  return 'http://localhost:3000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Creates configured axios instance

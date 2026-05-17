@@ -231,31 +231,49 @@ Try these repositories for testing:
 
 ## 📦 Deployment
 
-### Frontend (Vercel)
+### Production Deployment Guide
 
+**📖 See [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md) for complete deployment instructions.**
+
+The guide covers:
+- ✅ Configuring API base URLs for production
+- ✅ Platform-specific deployment (Vercel, Heroku, Railway, Docker)
+- ✅ Environment variable configuration
+- ✅ CORS setup
+- ✅ Troubleshooting common issues
+
+### Quick Deploy Options
+
+#### Option 1: Same-Origin Deployment (Recommended)
+Deploy frontend and backend on the same domain. No `VITE_API_BASE_URL` configuration needed.
+
+#### Option 2: Separate Domains
+Set `VITE_API_BASE_URL` to your backend URL:
 ```bash
-cd apps/frontend
-npm run build
-vercel --prod
+VITE_API_BASE_URL=https://api.yourdomain.com
 ```
 
-### Backend (Railway)
-
+#### Option 3: Platform Services
+Deploy to Vercel (frontend) + Heroku/Railway (backend):
 ```bash
-cd apps/backend
-npm run build
-railway up
+VITE_API_BASE_URL=https://your-backend-app.herokuapp.com
 ```
 
 ### Environment Variables for Production
 
-Make sure to set these in your deployment platform:
-
+**Backend:**
 ```env
-IBM_BOB_API_KEY=<your-production-key>
-IBM_BOB_BASE_URL=https://api.ibm-bob.com
+WATSONX_BASE_URL=<your-watsonx-url>
+IBM_CLOUD_API_KEY=<your-api-key>
+WATSONX_PROJECT_ID=<your-project-id>
 NODE_ENV=production
 FRONTEND_URL=https://your-frontend-domain.com
+```
+
+**Frontend:**
+```env
+VITE_API_BASE_URL=https://your-backend-url.com
+# Or leave empty for same-origin deployment
 ```
 
 ## 🐛 Troubleshooting
