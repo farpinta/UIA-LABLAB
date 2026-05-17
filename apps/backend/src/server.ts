@@ -28,10 +28,13 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
  */
 async function createServer() {
   const fastify = Fastify({
-    logger: false, 
+    logger: false,
     trustProxy: true,
     requestIdHeader: 'x-request-id',
-    requestIdLogLabel: 'reqId'
+    requestIdLogLabel: 'reqId',
+    connectionTimeout: 120000, // 2 minutes
+    keepAliveTimeout: 120000,
+    requestTimeout: 120000 // 2 minutes for large repo analysis
   });
 
   // Register CORS

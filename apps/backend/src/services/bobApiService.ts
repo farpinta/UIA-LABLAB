@@ -15,7 +15,6 @@ import * as path from 'path';
 const WATSONX_BASE_URL = process.env.WATSONX_BASE_URL || 'https://us-south.ml.cloud.ibm.com';
 const REQUEST_TIMEOUT = 60000; // 60 seconds
 const MAX_RETRIES = 3;
-const WATSONX_VERSION = '2023-05-29';
 const WATSONX_MODEL_ID = 'ibm/granite-4-h-small';
 
 const limiter = new Bottleneck({
@@ -327,7 +326,13 @@ export async function loadMockFallback(): Promise<BobApiResponse> {
   try {
     logger.info('Loading mock fallback data');
 
-    const mockPath = path.join(__dirname, '../mocks/expressAppMock.json');
+    // In production (Docker), mocks are at /app/apps/backend/src/mocks/
+    // In development, they're relative to the compiled output
+    const mockPath = process.env.NODE_ENV === 'production'
+      ? path.join('/app/apps/backend/src/mocks/expressAppMock.json')
+      : path.join(__dirname, '../mocks/expressAppMock.json');
+    
+    logger.info('Mock file path', { mockPath, __dirname, NODE_ENV: process.env.NODE_ENV });
     const mockData = await fs.readFile(mockPath, 'utf-8');
     const parsed = JSON.parse(mockData);
 
