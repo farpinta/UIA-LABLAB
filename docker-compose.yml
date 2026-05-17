@@ -13,7 +13,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173,https://uia-bobinsight.pinont.me,https://*.pinont.me}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - WATSONX_BASE_URL=${WATSONX_BASE_URL}
       - IBM_CLOUD_API_KEY=${IBM_CLOUD_API_KEY}
       - WATSONX_PROJECT_ID=${WATSONX_PROJECT_ID}

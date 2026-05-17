@@ -22,8 +22,8 @@ COPY apps/frontend ./apps/frontend
 FROM dependencies AS build
 
 # Build argument for API URL
-ARG VITE_API_URL=http://localhost:3000
-ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_API_BASE_URL=http://localhost:3000
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build shared types first
 WORKDIR /app/packages/shared-types

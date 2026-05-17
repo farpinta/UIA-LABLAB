@@ -16,8 +16,7 @@ import { errorHandler } from './utils/errorHandler';
 import { logger } from './utils/logger';
 import { cleanupOldRepos } from './services/gitService';
 
-console.log('DEBUG: API Key exists?', !!process.env.IBM_CLOUD_API_KEY);
-console.log('DEBUG: Current Directory:', process.cwd());
+// Removed debug console.log statements for production security
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -27,7 +26,10 @@ const FRONTEND_URLS = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
   : ['http://localhost:5173'];
 
-console.log('DEBUG: Allowed CORS origins:', FRONTEND_URLS);
+logger.info('CORS configuration loaded', {
+  originsCount: FRONTEND_URLS.length,
+  environment: process.env.NODE_ENV
+});
 
 /**
  * Creates and configures Fastify server
@@ -46,9 +48,14 @@ async function createServer() {
   // Register CORS with dynamic origin validation
   await fastify.register(cors, {
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, Postman)
+      // Allow requests with no origin only in development
       if (!origin) {
-        callback(null, true);
+        if (process.env.NODE_ENV === 'development') {
+          callback(null, true);
+        } else {
+          logger.warn('Request without origin header rejected in production');
+          callback(new Error('Origin header required'), false);
+        }
         return;
       }
 
@@ -58,8 +65,11 @@ async function createServer() {
         if (origin === allowedOrigin) return true;
         
         // Pattern match for wildcard subdomains (e.g., *.pinont.me)
-        const pattern = allowedOrigin.replace(/\*/g, '.*');
-        const regex = new RegExp(`^${pattern}$`);
+        // Escape special regex chars, then handle wildcard
+        const escapedOrigin = allowedOrigin
+          .replace(/[.+?^${}()|[\]\\]/g, '\\$&')  // Escape special chars
+          .replace(/\\\*/g, '[a-zA-Z0-9-]+');      // Replace \* with valid subdomain pattern
+        const regex = new RegExp(`^${escapedOrigin}$`);
         return regex.test(origin);
       });
 
