@@ -67,7 +67,7 @@ export function RepoInput({ onSubmit, loading }: RepoInputProps) {
         <button
           type="submit"
           disabled={loading}
-          className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 relative overflow-hidden"
         >
           {loading ? (
             <span className="flex items-center justify-center">
@@ -85,7 +85,12 @@ export function RepoInput({ onSubmit, loading }: RepoInputProps) {
               </span>
             </span>
           ) : (
-            'Analyze Repository'
+            <span className="flex items-center justify-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Analyze Repository
+            </span>
           )}
         </button>
       </form>

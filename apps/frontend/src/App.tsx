@@ -34,6 +34,9 @@ function App() {
     setLoading(true);
     setError(null);
 
+    console.log("🚀 [DEBUG] Loading Started!");
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     try {
       const response = await analyzeRepository(url);
 
@@ -143,7 +146,7 @@ function App() {
           </div>
         )}
 
-        {graphData && !loading && (
+        {graphData && (
           <div className="space-y-6">
             {/* Info Banner */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
