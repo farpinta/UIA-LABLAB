@@ -13,10 +13,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 const WATSONX_BASE_URL = process.env.WATSONX_BASE_URL || 'https://us-south.ml.cloud.ibm.com';
-const REQUEST_TIMEOUT = 15000; // 15 seconds
+const REQUEST_TIMEOUT = 60000; // 60 seconds
 const MAX_RETRIES = 3;
 const WATSONX_VERSION = '2023-05-29';
-const WATSONX_MODEL_ID = 'ibm/granite-13b-instruct-v2';
+const WATSONX_MODEL_ID = 'ibm/granite-4-h-small';
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
@@ -67,41 +67,77 @@ async function getIBMCloudToken(): Promise<string> {
     throw new ExternalServiceError('IBM Cloud API key not configured');
   }
 
-  const params = new URLSearchParams({
-    grant_type: 'urn:ibm:params:oauth:grant-type:apikey',
-    apikey: apiKey
-  });
+  try {
+    // Use URLSearchParams for safe URL encoding
+    const params = new URLSearchParams();
+    params.append('grant_type', 'urn:ibm:params:oauth:grant-type:apikey');
+    params.append('apikey', apiKey);
 
-  const response = await axios.post(
-    'https://iam.cloud.ibm.com/identity/token',
-    params.toString(),
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
-      },
-      timeout: REQUEST_TIMEOUT
+    const response = await axios.post(
+      'https://iam.cloud.ibm.com/identity/token',
+      params.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        timeout: REQUEST_TIMEOUT
+      }
+    );
+
+    if (!response.data?.access_token) {
+      throw new ExternalServiceError('Failed to retrieve IBM Cloud IAM token');
     }
-  );
 
-  if (!response.data?.access_token) {
-    throw new ExternalServiceError('Failed to retrieve IBM Cloud IAM token');
+    return response.data.access_token as string;
+  } catch (error: any) {
+    // Log the exact IBM IAM error response for debugging
+    logger.error('IBM IAM token request failed', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+
+    throw new ExternalServiceError(
+      `IBM IAM authentication failed: ${error.response?.data?.errorMessage || error.response?.data?.message || error.message}`
+    );
   }
-
-  return response.data.access_token as string;
 }
 
 /**
  * Generates the prompt for watsonx.ai
  */
+/**
+ * Filters out non-essential files to reduce token count
+ */
+function filterEssentialFiles(files: FileContent[]): FileContent[] {
+  return files.filter(f => {
+    const path = f.path.toLowerCase();
+    // Exclude node_modules, dist, build, and hidden folders
+    if (path.includes('node_modules/') ||
+        path.includes('/dist/') ||
+        path.includes('/build/') ||
+        path.includes('/.') ||
+        path.startsWith('.')) {
+      return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Generates the prompt for watsonx.ai with aggressive truncation
+ */
 function generatePrompt(files: FileContent[]): string {
   const fileList = files.map(f => f.path).join(', ');
 
-  return `Analyze this repository and extract:
-1. All function declarations (name, file, line number)
-2. Cross-file function invocations (which function calls which)
-3. Return strictly as JSON in this format:
+  return `Return ONLY a JSON object. No preamble, no headers, no code repeating.
+Format: {"files": [...]}.
 
+Analyze this repository and extract function declarations and their cross-file calls.
+
+Expected JSON structure:
 {
   "files": [
     {
@@ -123,10 +159,10 @@ function generatePrompt(files: FileContent[]): string {
   ]
 }
 
-Repository contains ${files.length} files: ${fileList}
+Analysis target: Repository with ${files.length} files (${fileList})
 
-File contents:
-${files.map(f => `\n--- ${f.path} ---\n${f.content}`).join('\n')}`; // นัทเอา .substring(0, 1000) ออกเพื่อให้ AI เห็นโค้ดทั้งหมดครับ
+File contents (first 500 chars):
+${files.map(f => `\n--- ${f.path} ---\n${f.content.substring(0, 500)}`).join('\n')}`;
 }
 
 /**
@@ -171,11 +207,15 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
       throw new ExternalServiceError('WATSONX_PROJECT_ID not configured');
     }
 
+    // Filter out non-essential files to reduce token count
+    const essentialFiles = filterEssentialFiles(files);
+
     logger.info('Sending analysis request to watsonx.ai', {
-      fileCount: files.length
+      originalFileCount: files.length,
+      filteredFileCount: essentialFiles.length
     });
 
-    const prompt = generatePrompt(files);
+    const prompt = generatePrompt(essentialFiles);
     const apiClient = createApiClient(token);
 
     const response = await limiter.schedule(() =>
@@ -184,26 +224,45 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
         input: prompt,
         project_id: projectId,
         parameters: {
-          decoding_method: 'greedy',
-          max_new_tokens: 1200,
-          temperature: 0.2
+          min_new_tokens: 1,
+          max_new_tokens: 3000,
+          temperature: 0.2,
+          repetition_penalty: 1.1
         }
       })
     );
 
-    const generatedText = response.data?.results?.[0]?.generated_text;
+    // Log raw response for debugging
+    logger.debug('Raw Watsonx Response:', { data: response.data });
+
+    // Robust check for response structure
+    if (!response.data?.results || !Array.isArray(response.data.results) || response.data.results.length === 0) {
+      throw new Error('Watsonx returned success but empty results array');
+    }
+
+    const generatedText = response.data.results[0]?.generated_text;
     if (!generatedText || typeof generatedText !== 'string') {
       throw new ExternalServiceError('watsonx.ai returned empty response');
     }
 
-    const stripped = generatedText
-      .replace(/```[a-zA-Z]*\n?([\s\S]*?)```/g, '$1')
-      .trim();
+    // Find the first '{' and last '}' to extract the JSON object
+    const firstBrace = generatedText.indexOf('{');
+    const lastBrace = generatedText.lastIndexOf('}');
+
+    if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+      throw new ExternalServiceError('No valid JSON object found in watsonx.ai response');
+    }
+
+    // Extract and clean the JSON string
+    const cleanedString = generatedText.substring(firstBrace, lastBrace + 1).trim();
+
+    logger.debug('Attempting to parse cleaned JSON string', { length: cleanedString.length });
 
     let parsed: BobApiResponse;
     try {
-      parsed = JSON.parse(stripped) as BobApiResponse;
+      parsed = JSON.parse(cleanedString) as BobApiResponse;
     } catch (parseError) {
+      logger.error('JSON parse error', { error: parseError, cleanedString: cleanedString.substring(0, 200) });
       throw new ExternalServiceError('Failed to parse watsonx.ai JSON response');
     }
 
@@ -217,7 +276,9 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
   } catch (error: any) {
     apiFailureCount++;
 
-    logger.error('watsonx.ai request failed', error, {
+    logger.error('watsonx.ai request failed', {
+      message: error.message,
+      watsonxError: error.response?.data,
       fileCount: files.length,
       successRate: getApiSuccessRate()
     });
