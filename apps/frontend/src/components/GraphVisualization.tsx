@@ -103,8 +103,8 @@ export function GraphVisualization({ data }: GraphVisualizationProps) {
     return { initialNodes: nodes, initialEdges: edges };
   }, [data]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {

@@ -14,8 +14,7 @@ import { healthRoutes } from './routes/health';
 import { analyzeRoutes } from './routes/analyze';
 import { errorHandler } from './utils/errorHandler';
 import { logger } from './utils/logger';
-import { preloadDemoCache } from './services/cacheService'; 
-import { cleanupOldRepos } from './services/gitService';   
+import { cleanupOldRepos } from './services/gitService';
 
 console.log('DEBUG: API Key exists?', !!process.env.IBM_CLOUD_API_KEY);
 console.log('DEBUG: Current Directory:', process.cwd());

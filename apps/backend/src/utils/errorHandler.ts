@@ -88,9 +88,9 @@ export function errorHandler(error: Error, reply: FastifyReply) {
 
   // Log the error
   if (isAppError && error.isOperational) {
-    logger.warn('Operational error occurred', error, { statusCode });
+    logger.warn('Operational error occurred', { error: error.message, statusCode });
   } else {
-    logger.error('Unexpected error occurred', error, { statusCode });
+    logger.error('Unexpected error occurred', { error: error.message, stack: error.stack, statusCode });
   }
 
   // Send error response
