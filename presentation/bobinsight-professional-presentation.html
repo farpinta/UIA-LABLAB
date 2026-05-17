@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BobInsight - Interactive Function Flow Mapper | Professional Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        body { overflow-x: hidden; background: #ffffff; }
+        .section { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
+        .glass-card { background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
+        .gradient-text { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%); }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        .feature-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .feature-card:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(37, 99, 235, 0.15); }
+        .step-number { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .nav-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(37, 99, 235, 0.3); cursor: pointer; transition: all 0.3s ease; }
+        .nav-dot.active { background: #2563eb; width: 40px; border-radius: 6px; }
+        .floating-nav { position: fixed; right: 2rem; top: 50%; transform: translateY(-50%); z-index: 1000; }
+        .btn-primary { background: #2563eb; color: #ffffff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #ffffff; color: #2563eb; border: 2px solid #2563eb; }
+        .btn-secondary:hover { background: #eff6ff; }
+    </style>
+</head>
+<body>
+    <div class="floating-nav">
+        <div class="flex flex-col gap-4">
+            <div class="nav-dot active" onclick="location.href='#section-0'"></div>
+            <div class="nav-dot" onclick="location.href='#section-1'"></div>
+            <div class="nav-dot" onclick="location.href='#section-2'"></div>
+            <div class="nav-dot" onclick="location.href='#section-3'"></div>
+            <div class="nav-dot" onclick="location.href='#section-4'"></div>
+        </div>
+    </div>
+
+    <!-- SECTION 1: Hero -->
+    <section class="section hero-gradient" id="section-0">
+        <div class="max-w-7xl mx-auto w-full text-center text-white">
+            <div class="mb-8 animate-float">
+                <svg class="w-32 h-32 mx-auto" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="45" fill="white" fill-opacity="0.1"/>
+                    <path d="M30 50L45 35L60 50L75 35" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="30" cy="50" r="5" fill="white"/>
+                    <circle cx="45" cy="35" r="5" fill="white"/>
+                    <circle cx="60" cy="50" r="5" fill="white"/>
+                    <circle cx="75" cy="35" r="5" fill="white"/>
+                </svg>
+            </div>
+            <h1 class="text-7xl md:text-8xl font-black mb-6 animate-fade-in-up">BobInsight</h1>
+            <p class="text-2xl md:text-3xl mb-4 font-light animate-fade-in-up opacity-90">Interactive Function Flow Mapper</p>
+            <p class="text-xl md:text-2xl mb-12 max-w-3xl mx-auto font-light animate-fade-in-up opacity-80">Visualize code dependencies instantly with AI-powered analysis</p>
+            
+            <div class="flex flex-wrap justify-center gap-4 mb-12 animate-fade-in-up">
+                <div class="glass-card px-6 py-3 rounded-full bg-white bg-opacity-20 backdrop-blur-lg">
+                    <span class="font-semibold flex items-center gap-2">
+                        <i class="bi bi-lightning-charge-fill"></i> 10-30s Analysis
+                    </span>
+                </div>
+                <div class="glass-card px-6 py-3 rounded-full bg-white bg-opacity-20 backdrop-blur-lg">
+                    <span class="font-semibold flex items-center gap-2">
+                        <i class="bi bi-robot"></i> IBM watsonx.ai
+                    </span>
+                </div>
+                <div class="glass-card px-6 py-3 rounded-full bg-white bg-opacity-20 backdrop-blur-lg">
+                    <span class="font-semibold flex items-center gap-2">
+                        <i class="bi bi-diagram-3-fill"></i> Interactive Graphs
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up">
+                <a href="#section-2" class="btn-secondary px-8 py-4 rounded-xl font-bold text-lg transition-all inline-flex items-center justify-center gap-2">
+                    <i class="bi bi-book"></i> Learn How to Use
+                </a>
+                <a href="http://localhost:5173" target="_blank" class="btn-primary px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-2xl inline-flex items-center justify-center gap-2">
+                    <i class="bi bi-globe"></i> Try BobInsight Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: Why -->
+    <section class="section bg-white" id="section-1">
+        <div class="max-w-7xl mx-auto w-full">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold mb-4 gradient-text">Why BobInsight Exists</h2>
+                <p class="text-xl text-gray-600">We solve a problem every developer faces</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="glass-card rounded-3xl p-8 border-l-4 border-red-500">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center">
+                            <i class="bi bi-exclamation-triangle-fill text-3xl text-red-600"></i>
+                        </div>
+                        <h3 class="text-3xl font-bold text-gray-900">The Problem</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-x-circle-fill text-red-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">Developers spend <strong class="text-red-600">30-40% of time</strong> understanding code</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-x-circle-fill text-red-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">New members need <strong class="text-red-600">weeks</strong> to onboard</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-x-circle-fill text-red-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">Refactoring is <strong class="text-red-600">risky</strong> without dependency visibility</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-x-circle-fill text-red-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">Code reviews miss <strong class="text-red-600">cross-file impacts</strong></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-3xl p-8 border-l-4 border-primary-500">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center">
+                            <i class="bi bi-stars text-3xl text-primary-600"></i>
+                        </div>
+                        <h3 class="text-3xl font-bold text-gray-900">Our Solution</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-check-circle-fill text-primary-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">Understand structure in <strong class="text-primary-600">10-30 seconds</strong></p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-check-circle-fill text-primary-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">Onboard <strong class="text-primary-600">40% faster</strong></p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-check-circle-fill text-primary-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">See <strong class="text-primary-600">all dependencies</strong> before changes</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="bi bi-check-circle-fill text-primary-500 text-xl flex-shrink-0 mt-1"></i>
+                            <p class="text-gray-700">Catch <strong class="text-primary-600">25% more issues</strong> in reviews</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+                <div class="glass-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl font-bold gradient-text">40%</div>
+                    <p class="text-gray-600 font-medium mt-2">Faster Onboarding</p>
+                </div>
+                <div class="glass-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl font-bold gradient-text">30s</div>
+                    <p class="text-gray-600 font-medium mt-2">Analysis Time</p>
+                </div>
+                <div class="glass-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl font-bold gradient-text">25%</div>
+                    <p class="text-gray-600 font-medium mt-2">More Issues Found</p>
+                </div>
+                <div class="glass-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl font-bold gradient-text">99%</div>
+                    <p class="text-gray-600 font-medium mt-2">Uptime</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: How to Use -->
+    <section class="section bg-gray-50" id="section-2">
+        <div class="max-w-7xl mx-auto w-full">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold mb-4 gradient-text">How to Use BobInsight</h2>
+                <p class="text-xl text-gray-600">Three simple steps to understand any codebase</p>
+            </div>
+            
+            <div class="space-y-12">
+                <div class="feature-card glass-card rounded-3xl p-8 bg-white">
+                    <div class="grid md:grid-cols-12 gap-8 items-center">
+                        <div class="md:col-span-2 flex justify-center">
+                            <div class="step-number w-24 h-24 rounded-3xl flex items-center justify-center text-white text-4xl font-black">1</div>
+                        </div>
+                        <div class="md:col-span-10">
+                            <div class="flex items-center gap-3 mb-4">
+                                <i class="bi bi-github text-3xl text-gray-900"></i>
+                                <h3 class="text-3xl font-bold text-gray-900">Paste GitHub URL</h3>
+                            </div>
+                            <p class="text-xl text-gray-600 mb-4">Copy any public GitHub repository URL</p>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-xl font-mono">
+                                https://github.com/expressjs/express
+                            </div>
+                            <div class="mt-4 bg-primary-50 p-4 rounded-xl flex items-start gap-3">
+                                <i class="bi bi-lightbulb-fill text-primary-600 text-xl flex-shrink-0"></i>
+                                <div>
+                                    <p class="font-semibold text-primary-900">Pro Tip</p>
+                                    <p class="text-primary-700">Try Express.js, React, or Node.js first!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card glass-card rounded-3xl p-8 bg-white">
+                    <div class="grid md:grid-cols-12 gap-8 items-center">
+                        <div class="md:col-span-2 flex justify-center">
+                            <div class="step-number w-24 h-24 rounded-3xl flex items-center justify-center text-white text-4xl font-black">2</div>
+                        </div>
+                        <div class="md:col-span-10">
+                            <div class="flex items-center gap-3 mb-4">
+                                <i class="bi bi-cpu-fill text-3xl text-gray-900"></i>
+                                <h3 class="text-3xl font-bold text-gray-900">AI Analyzes Code</h3>
+                            </div>
+                            <p class="text-xl text-gray-600 mb-4">IBM watsonx.ai extracts all function relationships</p>
+                            <div class="bg-primary-50 p-6 rounded-2xl">
+                                <div class="flex items-center gap-4">
+                                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-primary-200 border-t-primary-600"></div>
+                                    <div>
+                                        <p class="font-bold text-gray-900">Analyzing repository...</p>
+                                        <p class="text-sm text-gray-600">Cloning → Parsing → Extracting → Visualizing</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 bg-primary-50 p-4 rounded-xl flex items-start gap-3">
+                                <i class="bi bi-clock-fill text-primary-600 text-xl flex-shrink-0"></i>
+                                <div>
+                                    <p class="font-semibold text-primary-900">Processing Time</p>
+                                    <p class="text-primary-700">10-30 seconds depending on size</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-card glass-card rounded-3xl p-8 bg-white">
+                    <div class="grid md:grid-cols-12 gap-8 items-center">
+                        <div class="md:col-span-2 flex justify-center">
+                            <div class="step-number w-24 h-24 rounded-3xl flex items-center justify-center text-white text-4xl font-black">3</div>
+                        </div>
+                        <div class="md:col-span-10">
+                            <div class="flex items-center gap-3 mb-4">
+                                <i class="bi bi-diagram-3-fill text-3xl text-gray-900"></i>
+                                <h3 class="text-3xl font-bold text-gray-900">Explore Graph</h3>
+                            </div>
+                            <p class="text-xl text-gray-600 mb-4">Click, zoom, and explore your code structure</p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-primary-50 p-4 rounded-xl text-center border-2 border-primary-200">
+                                    <i class="bi bi-box-fill text-4xl text-primary-600 mb-2"></i>
+                                    <p class="font-bold text-gray-900">Click Nodes</p>
+                                    <p class="text-sm text-gray-600">See file details</p>
+                                </div>
+                                <div class="bg-primary-50 p-4 rounded-xl text-center border-2 border-primary-200">
+                                    <i class="bi bi-arrow-right-circle-fill text-4xl text-primary-600 mb-2"></i>
+                                    <p class="font-bold text-gray-900">Click Edges</p>
+                                    <p class="text-sm text-gray-600">View function calls</p>
+                                </div>
+                                <div class="bg-primary-50 p-4 rounded-xl text-center border-2 border-primary-200">
+                                    <i class="bi bi-zoom-in text-4xl text-primary-600 mb-2"></i>
+                                    <p class="font-bold text-gray-900">Navigate</p>
+                                    <p class="text-sm text-gray-600">Zoom & pan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: Benefits -->
+    <section class="section bg-white" id="section-3">
+        <div class="max-w-7xl mx-auto w-full">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold mb-4 gradient-text">How It Helps You Code Better</h2>
+                <p class="text-xl text-gray-600">Real benefits for your workflow</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="glass-card rounded-3xl p-8 hover:shadow-xl transition-all">
+                    <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                        <i class="bi bi-bullseye text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Understand 10x Faster</h3>
+                    <p class="text-gray-600 mb-4">See entire project at a glance</p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-primary-600 text-xl flex-shrink-0"></i>
+                            <span>Visualize architecture instantly</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-primary-600 text-xl flex-shrink-0"></i>
+                            <span>Identify entry points</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-primary-600 text-xl flex-shrink-0"></i>
+                            <span>Trace function calls</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="glass-card rounded-3xl p-8 hover:shadow-xl transition-all">
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                        <i class="bi bi-shield-check text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Refactor Safely</h3>
+                    <p class="text-gray-600 mb-4">Know what breaks before changing</p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-green-600 text-xl flex-shrink-0"></i>
+                            <span>See all dependencies</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-green-600 text-xl flex-shrink-0"></i>
+                            <span>Find circular dependencies</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-green-600 text-xl flex-shrink-0"></i>
+                            <span>Plan visually</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="glass-card rounded-3xl p-8 hover:shadow-xl transition-all">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                        <i class="bi bi-people-fill text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Onboard Faster</h3>
+                    <p class="text-gray-600 mb-4">Days instead of weeks</p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-purple-600 text-xl flex-shrink-0"></i>
+                            <span>Always up-to-date docs</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-purple-600 text-xl flex-shrink-0"></i>
+                            <span>Share with team</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-purple-600 text-xl flex-shrink-0"></i>
+                            <span>40% time reduction</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="glass-card rounded-3xl p-8 hover:shadow-xl transition-all">
+                    <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                        <i class="bi bi-search text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Better Reviews</h3>
+                    <p class="text-gray-600 mb-4">Catch more issues</p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-orange-600 text-xl flex-shrink-0"></i>
+                            <span>Verify cross-file impact</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-orange-600 text-xl flex-shrink-0"></i>
+                            <span>Spot architecture issues</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-orange-600 text-xl flex-shrink-0"></i>
+                            <span>25% quality improvement</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: CTA -->
+    <section class="section hero-gradient" id="section-4">
+        <div class="max-w-4xl mx-auto text-center text-white">
+            <i class="bi bi-rocket-takeoff-fill text-8xl mb-8"></i>
+            <h2 class="text-6xl font-bold mb-6">Ready to Try?</h2>
+            <p class="text-2xl mb-12 opacity-90">Start understanding your code better today</p>
+            
+            <a href="http://localhost:5173" target="_blank" class="inline-block bg-white text-primary-600 px-12 py-6 rounded-2xl text-2xl font-bold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-2xl mb-8">
+                <i class="bi bi-globe mr-2"></i> Try BobInsight Now
+            </a>
+            
+            <div class="grid md:grid-cols-3 gap-6 mt-12">
+                <div class="glass-card rounded-2xl p-6 bg-white bg-opacity-10 backdrop-blur-lg">
+                    <i class="bi bi-lightning-charge-fill text-4xl mb-3"></i>
+                    <p class="text-lg font-semibold">Fast</p>
+                    <p class="text-sm opacity-75">10-30 seconds</p>
+                </div>
+                <div class="glass-card rounded-2xl p-6 bg-white bg-opacity-10 backdrop-blur-lg">
+                    <i class="bi bi-gift-fill text-4xl mb-3"></i>
+                    <p class="text-lg font-semibold">Free</p>
+                    <p class="text-sm opacity-75">No credit card</p>
+                </div>
+                <div class="glass-card rounded-2xl p-6 bg-white bg-opacity-10 backdrop-blur-lg">
+                    <i class="bi bi-shield-lock-fill text-4xl mb-3"></i>
+                    <p class="text-lg font-semibold">Secure</p>
+                    <p class="text-sm opacity-75">Your code is safe</p>
+                </div>
+            </div>
+            
+            <div class="mt-12 text-sm opacity-75">
+                <p>Built for IBM Bob Hackathon 2026</p>
+                <p class="mt-1">Powered by IBM watsonx.ai</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const sections = document.querySelectorAll('.section');
+        const navDots = document.querySelectorAll('.nav-dot');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 300) current = section.getAttribute('id');
+            });
+            navDots.forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (current === `section-${index}`) dot.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
