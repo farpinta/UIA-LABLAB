@@ -1,68 +1,50 @@
-/**
- * Graph Store
- * Zustand store for managing graph state
- */
-
 import { create } from 'zustand';
 import { GraphData, GraphNode, GraphEdge } from '@bobinsight/shared-types';
 
-interface GraphStore {
-  // State
+interface GraphState {
   graphData: GraphData | null;
   loading: boolean;
   error: string | null;
-  selectedNode: GraphNode | null;
-  selectedEdge: GraphEdge | null;
   repoUrl: string;
   analysisSource: string | null;
+  selectedNode: GraphNode | null;
+  selectedEdge: GraphEdge | null;
 
-  // Actions
-  setGraphData: (data: GraphData, source: string) => void;
+  setGraphData: (data: GraphData, source?: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setRepoUrl: (url: string) => void;
   selectNode: (node: GraphNode | null) => void;
   selectEdge: (edge: GraphEdge | null) => void;
-  setRepoUrl: (url: string) => void;
   reset: () => void;
 }
 
-const initialState = {
+export const useGraphStore = create<GraphState>((set) => ({
+  // ค่าเริ่มต้น (Initial State)
   graphData: null,
   loading: false,
   error: null,
+  repoUrl: '',
+  analysisSource: null,
   selectedNode: null,
   selectedEdge: null,
-  repoUrl: '',
-  analysisSource: null
-};
 
-export const useGraphStore = create<GraphStore>((set) => ({
-  ...initialState,
-
-  setGraphData: (data, source) => set({ 
-    graphData: data, 
-    analysisSource: source,
-    error: null 
-  }),
-
+  // ฟังก์ชันอัปเดต State (ใช้ set() เพื่อกระตุ้น React เสมอ)
+  setGraphData: (data, source = 'api') => set({ graphData: data, analysisSource: source }),
   setLoading: (loading) => set({ loading }),
-
-  setError: (error) => set({ 
-    error, 
-    loading: false 
-  }),
-
-  selectNode: (node) => set({ 
-    selectedNode: node,
-    selectedEdge: null 
-  }),
-
-  selectEdge: (edge) => set({ 
-    selectedEdge: edge,
-    selectedNode: null 
-  }),
-
+  setError: (error) => set({ error }),
   setRepoUrl: (url) => set({ repoUrl: url }),
-
-  reset: () => set(initialState)
+  selectNode: (node) => set({ selectedNode: node }),
+  selectEdge: (edge) => set({ selectedEdge: edge }),
+  
+  // รีเซ็ตค่าทั้งหมดกลับเป็นเหมือนตอนเปิดเว็บใหม่
+  reset: () => set({
+    graphData: null,
+    loading: false,
+    error: null,
+    repoUrl: '',
+    analysisSource: null,
+    selectedNode: null,
+    selectedEdge: null,
+  }),
 }));

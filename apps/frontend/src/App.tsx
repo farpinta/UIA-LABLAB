@@ -34,6 +34,9 @@ function App() {
     setLoading(true);
     setError(null);
 
+    console.log("🚀 [DEBUG] Loading Started!");
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     try {
       const response = await analyzeRepository(url);
 
@@ -89,7 +92,7 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!graphData && !loading && (
+        {!graphData && (
           <RepoInput onSubmit={handleAnalyze} loading={loading} />
         )}
 
@@ -115,7 +118,7 @@ function App() {
           </div>
         )}
 
-        {graphData && !loading && (
+        {graphData && (
           <div className="space-y-6">
             {/* Info Banner */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
