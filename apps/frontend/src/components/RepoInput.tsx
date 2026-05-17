@@ -75,11 +75,13 @@ export function RepoInput({ onSubmit, loading }: RepoInputProps) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span className="animate-pulse">Analyzing</span>
-              <span className="inline-flex ml-1">
-                <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+              <span className="flex items-center">
+                Analyzing
+                <span className="flex ml-1">
+                  <span className="animate-pulse-dot" style={{ animationDelay: '0ms' }}>.</span>
+                  <span className="animate-pulse-dot" style={{ animationDelay: '200ms' }}>.</span>
+                  <span className="animate-pulse-dot" style={{ animationDelay: '400ms' }}>.</span>
+                </span>
               </span>
             </span>
           ) : (

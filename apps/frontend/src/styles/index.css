@@ -51,3 +51,17 @@
 .react-flow__handle {
   @apply w-3 h-3 bg-primary-500 border-2 border-white;
 }
+
+/* Loading dots animation */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}

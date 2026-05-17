@@ -13,6 +13,9 @@ import { getCachedAnalysis, setCachedAnalysis } from '../services/cacheService';
 import { logger } from '../utils/logger';
 import { ValidationError, ExternalServiceError } from '../utils/errorHandler';
 
+// Analysis timeout: 15 seconds - matches fallback strategy
+const ANALYSIS_TIMEOUT_MS = 15000;
+
 export async function analyzeRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/analyze
@@ -87,14 +90,20 @@ export async function analyzeRoutes(fastify: FastifyInstance) {
           }
 
           const analysisPromise = analyzeWithBobApi(files);
-          const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Analysis timeout')), 15000)
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Analysis timeout')), ANALYSIS_TIMEOUT_MS)
           );
 
           // ใช้ Type Assertion เพื่อยืนยันข้อมูลจาก Promise.race
           bobResponse = await (Promise.race([analysisPromise, timeoutPromise]) as Promise<BobApiResponse>);
           
         } catch (error: any) {
+          // Check if this is a rate limit error
+          if (error.message === 'RATE_LIMIT_EXCEEDED') {
+            logger.error('Rate limit exceeded', { error: error.message });
+            throw new ExternalServiceError('API rate limit exceeded. Please try again later.');
+          }
+          
           logger.warn('IBM Bob API failed, using fallback', { error: error.message });
           bobResponse = await loadMockFallback();
           source = 'fallback-mock';

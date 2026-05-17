@@ -17,6 +17,10 @@ const REQUEST_TIMEOUT = 60000; // 60 seconds
 const MAX_RETRIES = 3;
 const WATSONX_MODEL_ID = 'ibm/granite-4-h-small';
 
+// Prompt configuration constants
+const FILE_CONTENT_PREVIEW_LENGTH = 500; // Characters to include in prompt for each file
+const WATSONX_MAX_TOKENS = 1500; // Sufficient for typical repository analysis
+
 const limiter = new Bottleneck({
   maxConcurrent: 1,
   minTime: 6000
@@ -98,8 +102,14 @@ async function getIBMCloudToken(): Promise<string> {
       message: error.message
     });
 
+    // Check for disabled API key (rate limit)
+    const errorMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    if (errorMessage && errorMessage.includes('Provided API key is disabled')) {
+      throw new ExternalServiceError('RATE_LIMIT_EXCEEDED');
+    }
+
     throw new ExternalServiceError(
-      `IBM IAM authentication failed: ${error.response?.data?.errorMessage || error.response?.data?.message || error.message}`
+      `IBM IAM authentication failed: ${errorMessage}`
     );
   }
 }
@@ -180,8 +190,8 @@ Expected JSON structure (DEPENDENCY TREE FORMAT):
 
 Analysis target: Repository with ${files.length} files (${fileList})
 
-File contents (first 500 chars):
-${files.map(f => `\n--- ${f.path} ---\n${f.content.substring(0, 500)}`).join('\n')}`;
+File contents (first ${FILE_CONTENT_PREVIEW_LENGTH} chars):
+${files.map(f => `\n--- ${f.path} ---\n${f.content.substring(0, FILE_CONTENT_PREVIEW_LENGTH)}`).join('\n')}`;
 }
 
 /**
@@ -252,7 +262,7 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
         ],
         project_id: projectId,
         parameters: {
-          max_new_tokens: 1500,
+          max_new_tokens: WATSONX_MAX_TOKENS,
           temperature: 0.1
         }
       })
@@ -308,6 +318,12 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
       successRate: getApiSuccessRate()
     });
 
+    // Check if this is a rate limit error - re-throw to preserve it
+    if (error.message === 'RATE_LIMIT_EXCEEDED') {
+      throw error;
+    }
+
+    // For other errors, attempt fallback
     try {
       return await loadMockFallback();
     } catch (fallbackError) {

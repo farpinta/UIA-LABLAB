@@ -20,47 +20,55 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor for logging
+ * Request interceptor for logging (development only)
  */
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    if (import.meta.env.DEV) {
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
   (error) => {
-    console.error('[API] Request error:', error);
+    if (import.meta.env.DEV) {
+      console.error('[API] Request error:', error);
+    }
     return Promise.reject(error);
   }
 );
 
 /**
- * Response interceptor for error handling
+ * Response interceptor for error handling (development only)
  */
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[API] Response ${response.status} from ${response.config.url}`);
+    if (import.meta.env.DEV) {
+      console.log(`[API] Response ${response.status} from ${response.config.url}`);
+    }
     return response;
   },
   (error: AxiosError) => {
-    console.error('[API] Response error:', error.message);
-    
-    if (error.response) {
-      // Server responded with error status
-      console.error('[API] Error response:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers
-      });
-    } else if (error.request) {
-      // Request made but no response - possible CORS or network issue
-      console.error('[API] No response received - possible CORS or network issue');
-      console.error('[API] Request details:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        baseURL: error.config?.baseURL
-      });
-    } else {
-      console.error('[API] Error setting up request:', error.message);
+    if (import.meta.env.DEV) {
+      console.error('[API] Response error:', error.message);
+      
+      if (error.response) {
+        // Server responded with error status
+        console.error('[API] Error response:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        // Request made but no response - possible CORS or network issue
+        console.error('[API] No response received - possible CORS or network issue');
+        console.error('[API] Request details:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        });
+      } else {
+        console.error('[API] Error setting up request:', error.message);
+      }
     }
     
     return Promise.reject(error);
@@ -79,7 +87,14 @@ export async function analyzeRepository(repoUrl: string): Promise<AnalyzeRespons
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to analyze repository');
+      const errorMessage = error.response.data.error || 'Failed to analyze repository';
+      
+      // Check for rate limit error
+      if (errorMessage.includes('rate limit') || errorMessage.includes('RATE_LIMIT')) {
+        throw new Error('⏱️ API Rate Limit Exceeded - The IBM Watson API key has reached its usage limit. Please try again later or the system will use cached/mock data.');
+      }
+      
+      throw new Error(errorMessage);
     }
     throw new Error('Network error. Please check your connection and try again.');
   }

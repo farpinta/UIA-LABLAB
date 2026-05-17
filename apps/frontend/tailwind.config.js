@@ -24,6 +24,15 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['Fira Code', 'monospace'],
       },
+      keyframes: {
+        'pulse-dot': {
+          '0%, 100%': { opacity: '0.2' },
+          '50%': { opacity: '1' },
+        },
+      },
+      animation: {
+        'pulse-dot': 'pulse-dot 1.4s ease-in-out infinite',
+      },
     },
   },
   plugins: [],
