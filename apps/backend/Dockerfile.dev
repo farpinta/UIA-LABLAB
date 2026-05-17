@@ -1,0 +1,37 @@
+FROM node:20-alpine
+
+# Install git for simple-git dependency
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+# Copy workspace configuration
+COPY package*.json ./
+COPY packages/shared-types/package*.json ./packages/shared-types/
+COPY apps/backend/package*.json ./apps/backend/
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy source code
+COPY packages/shared-types ./packages/shared-types
+COPY apps/backend ./apps/backend
+
+# Create temp directory for git operations
+RUN mkdir -p /tmp/bobinsight && chmod 777 /tmp/bobinsight
+
+# Set working directory to backend
+WORKDIR /app/apps/backend
+
+# Expose backend port
+EXPOSE 3000
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+# Start the application in watch mode
+CMD ["npm", "run", "dev"]
+
+# Made with Bob

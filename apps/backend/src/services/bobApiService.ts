@@ -15,7 +15,6 @@ import * as path from 'path';
 const WATSONX_BASE_URL = process.env.WATSONX_BASE_URL || 'https://us-south.ml.cloud.ibm.com';
 const REQUEST_TIMEOUT = 60000; // 60 seconds
 const MAX_RETRIES = 3;
-const WATSONX_VERSION = '2023-05-29';
 const WATSONX_MODEL_ID = 'ibm/granite-4-h-small';
 
 const limiter = new Bottleneck({
@@ -135,22 +134,42 @@ function generatePrompt(files: FileContent[]): string {
   return `Return ONLY a JSON object. No preamble, no headers, no code repeating.
 Format: {"files": [...]}.
 
-Analyze this repository and extract function declarations and their cross-file calls.
+IMPORTANT: DO NOT use markdown code blocks (like \`\`\`json). You MUST start your response directly with the opening curly brace '{' and end with the closing brace '}'.
 
-Expected JSON structure:
+Analyze this repository as a DEPENDENCY TREE and extract function declarations and their cross-file relationships.
+
+CRITICAL INSTRUCTIONS:
+1. Analyze ALL provided files and find at least 10 connections between them.
+2. Every 'import' statement should be represented as a call in the JSON.
+3. Focus especially on the routes/ folder and how they call services/.
+4. Look at import statements, function calls, and component usage.
+5. A graph with only 1-2 edges is incomplete - find ALL the connections.
+
+Focus especially on:
+- Import statements (e.g., import { analyzeWithBobApi } from '../services/bobApiService')
+- Function calls across files (e.g., routes calling service functions)
+- Component usage in React/JSX files
+- Module exports and imports
+
+Expected JSON structure (DEPENDENCY TREE FORMAT):
 {
   "files": [
     {
-      "name": "src/auth.js",
+      "name": "src/routes/analyze.ts",
       "functions": [
         {
-          "name": "login",
+          "name": "analyzeRoute",
           "line": 10,
           "calls": [
             {
-              "file": "src/db.js",
-              "function": "getUser",
-              "description": "Fetches user record"
+              "file": "src/services/bobApiService.ts",
+              "function": "analyzeWithBobApi",
+              "description": "Calls AI service to analyze repository"
+            },
+            {
+              "file": "src/services/gitService.ts",
+              "function": "cloneRepository",
+              "description": "Clones the repository for analysis"
             }
           ]
         }
@@ -219,15 +238,22 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
     const apiClient = createApiClient(token);
 
     const response = await limiter.schedule(() =>
-      apiClient.post(`/ml/v1/text/generation?version=${WATSONX_VERSION}`, {
+      apiClient.post(`/ml/v1/text/chat?version=2024-05-01`, {
         model_id: WATSONX_MODEL_ID,
-        input: prompt,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a software analysis expert. Return ONLY a plain JSON object. No markdown formatting.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
         project_id: projectId,
         parameters: {
-          min_new_tokens: 1,
-          max_new_tokens: 3000,
-          temperature: 0.2,
-          repetition_penalty: 1.1
+          max_new_tokens: 1500,
+          temperature: 0.1
         }
       })
     );
@@ -235,12 +261,11 @@ export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiRes
     // Log raw response for debugging
     logger.debug('Raw Watsonx Response:', { data: response.data });
 
-    // Robust check for response structure
-    if (!response.data?.results || !Array.isArray(response.data.results) || response.data.results.length === 0) {
-      throw new Error('Watsonx returned success but empty results array');
-    }
+    // Support both Chat API (choices) and legacy API (results) formats
+    const generatedText = response.data.choices?.[0]?.message?.content ||
+                          response.data.results?.[0]?.generated_text ||
+                          "";
 
-    const generatedText = response.data.results[0]?.generated_text;
     if (!generatedText || typeof generatedText !== 'string') {
       throw new ExternalServiceError('watsonx.ai returned empty response');
     }
@@ -301,7 +326,13 @@ export async function loadMockFallback(): Promise<BobApiResponse> {
   try {
     logger.info('Loading mock fallback data');
 
-    const mockPath = path.join(__dirname, '../mocks/expressAppMock.json');
+    // In production (Docker), mocks are at /app/apps/backend/src/mocks/
+    // In development, they're relative to the compiled output
+    const mockPath = process.env.NODE_ENV === 'production'
+      ? path.join('/app/apps/backend/src/mocks/expressAppMock.json')
+      : path.join(__dirname, '../mocks/expressAppMock.json');
+    
+    logger.info('Mock file path', { mockPath, __dirname, NODE_ENV: process.env.NODE_ENV });
     const mockData = await fs.readFile(mockPath, 'utf-8');
     const parsed = JSON.parse(mockData);
 

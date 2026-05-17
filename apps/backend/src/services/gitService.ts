@@ -12,6 +12,8 @@ import { AppError } from '../utils/errorHandler';
 
 const TEMP_DIR = process.env.TEMP_DIR || '/tmp/bobinsight';
 const SUPPORTED_EXTENSIONS = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.go', '.rb'];
+const MAX_FILE_SIZE = 500 * 1024; // 500KB max per file
+const MAX_FILES = 200; // Maximum 200 files to prevent memory issues
 
 /**
  * Generates a unique directory name for cloning
@@ -95,9 +97,20 @@ async function walkDirectory(
   basePath: string,
   files: FileContent[]
 ): Promise<void> {
+  // Stop if we've reached the file limit
+  if (files.length >= MAX_FILES) {
+    logger.warn('Reached maximum file limit', { maxFiles: MAX_FILES });
+    return;
+  }
+
   const entries = await fs.readdir(currentPath, { withFileTypes: true });
 
   for (const entry of entries) {
+    // Check limit again in loop
+    if (files.length >= MAX_FILES) {
+      break;
+    }
+
     const fullPath = path.join(currentPath, entry.name);
 
     // Skip hidden files, node_modules, and common build directories
@@ -112,6 +125,17 @@ async function walkDirectory(
       
       if (SUPPORTED_EXTENSIONS.includes(extension)) {
         try {
+          // Check file size before reading
+          const stats = await fs.stat(fullPath);
+          if (stats.size > MAX_FILE_SIZE) {
+            logger.warn('Skipping large file', {
+              fullPath,
+              size: stats.size,
+              maxSize: MAX_FILE_SIZE
+            });
+            continue;
+          }
+
           const content = await fs.readFile(fullPath, 'utf-8');
           const relativePath = path.relative(basePath, fullPath);
 

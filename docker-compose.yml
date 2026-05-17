@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: bobinsight-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - WATSONX_BASE_URL=${WATSONX_BASE_URL}
+      - IBM_CLOUD_API_KEY=${IBM_CLOUD_API_KEY}
+      - WATSONX_PROJECT_ID=${WATSONX_PROJECT_ID}
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      - TEMP_DIR=/tmp/bobinsight
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60000}
+    volumes:
+      - backend-temp:/tmp/bobinsight
+      - backend-cache:/app/cache
+    networks:
+      - bobinsight-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3000}
+    container_name: bobinsight-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - bobinsight-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Redis Cache (Optional - for production caching)
+  redis:
+    image: redis:7-alpine
+    container_name: bobinsight-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - bobinsight-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  bobinsight-network:
+    driver: bridge
+
+volumes:
+  backend-temp:
+    driver: local
+  backend-cache:
+    driver: local
+  redis-data:
+    driver: local
+
+# Made with Bob

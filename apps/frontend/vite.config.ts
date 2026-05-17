@@ -26,9 +26,15 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'reactflow-vendor': ['reactflow']
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('reactflow')) {
+              return 'reactflow-vendor';
+            }
+          }
         }
       }
     }

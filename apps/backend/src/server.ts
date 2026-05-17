@@ -14,33 +14,75 @@ import { healthRoutes } from './routes/health';
 import { analyzeRoutes } from './routes/analyze';
 import { errorHandler } from './utils/errorHandler';
 import { logger } from './utils/logger';
-import { preloadDemoCache } from './services/cacheService'; 
-import { cleanupOldRepos } from './services/gitService';   
+import { cleanupOldRepos } from './services/gitService';
 
-console.log('DEBUG: API Key exists?', !!process.env.IBM_CLOUD_API_KEY);
-console.log('DEBUG: Current Directory:', process.cwd());
+// Removed debug console.log statements for production security
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// Support multiple frontend origins (development + production)
+const FRONTEND_URLS = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['http://localhost:5173'];
+
+logger.info('CORS configuration loaded', {
+  originsCount: FRONTEND_URLS.length,
+  environment: process.env.NODE_ENV
+});
 
 /**
  * Creates and configures Fastify server
  */
 async function createServer() {
   const fastify = Fastify({
-    logger: false, 
+    logger: false,
     trustProxy: true,
     requestIdHeader: 'x-request-id',
-    requestIdLogLabel: 'reqId'
+    requestIdLogLabel: 'reqId',
+    connectionTimeout: 120000, // 2 minutes
+    keepAliveTimeout: 120000,
+    requestTimeout: 120000 // 2 minutes for large repo analysis
   });
 
-  // Register CORS
+  // Register CORS with dynamic origin validation
   await fastify.register(cors, {
-    origin: FRONTEND_URL, 
+    origin: (origin, callback) => {
+      // Allow requests with no origin only in development
+      if (!origin) {
+        if (process.env.NODE_ENV === 'development') {
+          callback(null, true);
+        } else {
+          logger.warn('Request without origin header rejected in production');
+          callback(new Error('Origin header required'), false);
+        }
+        return;
+      }
+
+      // Check if origin is in allowed list
+      const isAllowed = FRONTEND_URLS.some(allowedOrigin => {
+        // Exact match
+        if (origin === allowedOrigin) return true;
+        
+        // Pattern match for wildcard subdomains (e.g., *.pinont.me)
+        // Escape special regex chars, then handle wildcard
+        const escapedOrigin = allowedOrigin
+          .replace(/[.+?^${}()|[\]\\]/g, '\\$&')  // Escape special chars
+          .replace(/\\\*/g, '[a-zA-Z0-9-]+');      // Replace \* with valid subdomain pattern
+        const regex = new RegExp(`^${escapedOrigin}$`);
+        return regex.test(origin);
+      });
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     exposedHeaders: ['X-Request-Id'],
     preflightContinue: false,
     optionsSuccessStatus: 204
