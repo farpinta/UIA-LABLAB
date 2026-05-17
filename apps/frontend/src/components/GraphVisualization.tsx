@@ -14,78 +14,31 @@ import ReactFlow, {
   useEdgesState,
   ConnectionLineType,
   MarkerType,
+  Position,
 } from 'reactflow';
 // @ts-ignore
 import 'reactflow/dist/style.css';
+import dagre from 'dagre';
 import { GraphData, GraphNode as GraphNodeType } from '@bobinsight/shared-types';
 import { useGraphStore } from '../hooks/useGraphStore';
-import dagre from 'dagre';
 
 interface GraphVisualizationProps {
   data: GraphData;
 }
 
+// Create dagre instance outside component for performance
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
-  const nodeWidth = 250;
-  const nodeHeight = 100;
-  
-  dagreGraph.setGraph({ rankdir: direction });
-
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.targetPosition = isHorizontal ? Position.Left : Position.Top;
-    node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
-    // เลื่อนตำแหน่งให้จุดศูนย์กลางตรงกัน
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth / 2,
-      y: nodeWithPosition.y - nodeHeight / 2,
-    };
-  });
-
-  return { nodes, edges };
-};
+const NODE_WIDTH = 250;
+const NODE_HEIGHT = 100;
 
 export function GraphVisualization({ data }: GraphVisualizationProps) {
   const { selectNode, selectEdge } = useGraphStore();
 
-  // Transform GraphData to React Flow format
+  // Transform GraphData to React Flow format with Dagre Tree Layout
   const { initialNodes, initialEdges } = useMemo(() => {
-    const nodes: Node[] = data.nodes.map((node, index) => ({
-      id: node.id,
-      type: 'default',
-      data: { 
-        label: (
-          <div className="px-3 py-2">
-            <div className="font-semibold text-sm mb-1">{node.fileName}</div>
-            <div className="text-xs text-gray-600">
-              {node.functions.length} function{node.functions.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-        ),
-        node 
-      },
-      position: { x: (index % 3) * 250, y: Math.floor(index / 3) * 150 },
-      style: {
-        background: '#fff',
-        border: '2px solid #3b82f6',
-        borderRadius: '8px',
-        padding: '0',
-        minWidth: '200px',
-      },
-    }));
+    dagreGraph.setGraph({ rankdir: 'TB' });
 
     const edges: Edge[] = data.edges.map((edge) => ({
       id: edge.id,
@@ -101,6 +54,51 @@ export function GraphVisualization({ data }: GraphVisualizationProps) {
       },
       data: { edge },
     }));
+
+    data.nodes.forEach((node) => {
+      dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+    });
+
+    edges.forEach((edge) => {
+      if (edge.source && edge.target) {
+        dagreGraph.setEdge(edge.source, edge.target);
+      }
+    });
+
+    dagre.layout(dagreGraph);
+
+    const nodes: Node[] = data.nodes.map((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+
+      return {
+        id: node.id,
+        type: 'default',
+        targetPosition: Position.Top,
+        sourcePosition: Position.Bottom,
+        data: {
+          label: (
+            <div className="px-3 py-2">
+              <div className="font-semibold text-sm mb-1">{node.fileName}</div>
+              <div className="text-xs text-gray-600">
+                {node.functions.length} function{node.functions.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          ),
+          node
+        },
+        position: {
+          x: nodeWithPosition.x - NODE_WIDTH / 2,
+          y: nodeWithPosition.y - NODE_HEIGHT / 2
+        },
+        style: {
+          background: '#fff',
+          border: '2px solid #3b82f6',
+          borderRadius: '8px',
+          padding: '0',
+          minWidth: '200px',
+        },
+      };
+    });
 
     return { initialNodes: nodes, initialEdges: edges };
   }, [data]);
@@ -137,7 +135,7 @@ export function GraphVisualization({ data }: GraphVisualizationProps) {
       >
         <Background />
         <Controls />
-        <MiniMap 
+        <MiniMap
           nodeColor="#3b82f6"
           maskColor="rgba(0, 0, 0, 0.1)"
           position="bottom-right"

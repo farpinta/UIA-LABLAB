@@ -1,6 +1,6 @@
 /**
- * IBM Bob API Service
- * Handles communication with IBM Bob API with retry logic and fallback
+ * IBM watsonx.ai Service
+ * Handles communication with watsonx.ai with retry logic and fallback
  */
 
 import axios, { AxiosInstance } from 'axios';
@@ -12,14 +12,15 @@ import { ExternalServiceError } from '../utils/errorHandler';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const IBM_BOB_BASE_URL = process.env.IBM_BOB_BASE_URL || 'https://us-south.ml.cloud.ibm.com';
+const WATSONX_BASE_URL = process.env.WATSONX_BASE_URL || 'https://us-south.ml.cloud.ibm.com';
 const REQUEST_TIMEOUT = 15000; // 15 seconds
 const MAX_RETRIES = 3;
-
+const WATSONX_VERSION = '2023-05-29';
+const WATSONX_MODEL_ID = 'ibm/granite-13b-instruct-v2';
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
-  minTime: 6000 
+  minTime: 6000
 });
 
 // Track API health
@@ -27,19 +28,18 @@ let apiSuccessCount = 0;
 let apiFailureCount = 0;
 
 /**
- * Creates configured axios instance for IBM Bob API
+ * Creates configured axios instance for watsonx.ai
  */
-function createApiClient(apiKey: string): AxiosInstance {
+function createApiClient(token: string): AxiosInstance {
   const client = axios.create({
-    baseURL: IBM_BOB_BASE_URL,
+    baseURL: WATSONX_BASE_URL,
     timeout: REQUEST_TIMEOUT,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Authorization': `Bearer ${token}`
     }
   });
 
-  // Configure retry logic
   axiosRetry(client, {
     retries: MAX_RETRIES,
     retryDelay: axiosRetry.exponentialDelay,
@@ -48,7 +48,7 @@ function createApiClient(apiKey: string): AxiosInstance {
              (error.response?.status ? error.response.status >= 500 : false);
     },
     onRetry: (retryCount, error) => {
-      logger.warn('Retrying IBM Bob API request', {
+      logger.warn('Retrying watsonx.ai request', {
         retryCount,
         error: error.message
       });
@@ -59,11 +59,44 @@ function createApiClient(apiKey: string): AxiosInstance {
 }
 
 /**
- * Generates the prompt for IBM Bob API
+ * Gets IBM Cloud IAM token
+ */
+async function getIBMCloudToken(): Promise<string> {
+  const apiKey = process.env.IBM_CLOUD_API_KEY;
+  if (!apiKey) {
+    throw new ExternalServiceError('IBM Cloud API key not configured');
+  }
+
+  const params = new URLSearchParams({
+    grant_type: 'urn:ibm:params:oauth:grant-type:apikey',
+    apikey: apiKey
+  });
+
+  const response = await axios.post(
+    'https://iam.cloud.ibm.com/identity/token',
+    params.toString(),
+    {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
+      timeout: REQUEST_TIMEOUT
+    }
+  );
+
+  if (!response.data?.access_token) {
+    throw new ExternalServiceError('Failed to retrieve IBM Cloud IAM token');
+  }
+
+  return response.data.access_token as string;
+}
+
+/**
+ * Generates the prompt for watsonx.ai
  */
 function generatePrompt(files: FileContent[]): string {
   const fileList = files.map(f => f.path).join(', ');
-  
+
   return `Analyze this repository and extract:
 1. All function declarations (name, file, line number)
 2. Cross-file function invocations (which function calls which)
@@ -97,21 +130,20 @@ ${files.map(f => `\n--- ${f.path} ---\n${f.content}`).join('\n')}`; // นัท
 }
 
 /**
- * Checks if IBM Bob API is available
+ * Checks if watsonx.ai is available
  */
 export async function checkApiHealth(): Promise<boolean> {
-  const apiKey = process.env.IBM_BOB_API_KEY;
+  const apiKey = process.env.IBM_CLOUD_API_KEY;
   if (!apiKey) {
-    logger.warn('IBM Bob API key not configured');
+    logger.warn('IBM Cloud API key not configured');
     return false;
   }
 
   try {
-    const apiClient = createApiClient(apiKey);
-    await apiClient.get('/health', { timeout: 5000 });
+    await getIBMCloudToken();
     return true;
   } catch (error) {
-    logger.warn('IBM Bob API health check failed', { error });
+    logger.warn('watsonx.ai health check failed', { error });
     return false;
   }
 }
@@ -126,55 +158,77 @@ export function getApiSuccessRate(): number {
 }
 
 /**
- * Analyzes repository using IBM Bob API
+ * Analyzes repository using watsonx.ai
  * @param files - Array of file contents to analyze
  * @returns Bob API response
  */
 export async function analyzeWithBobApi(files: FileContent[]): Promise<BobApiResponse> {
-  // ดึงค่า API Key ภายในฟังก์ชันเพื่อแก้ปัญหาลำดับการโหลดไฟล์ครับ
-  const apiKey = process.env.IBM_BOB_API_KEY;
-
-  if (!apiKey) {
-    logger.warn('IBM Bob API key not configured, using fallback');
-    throw new ExternalServiceError('IBM Bob API key not configured');
-  }
-
   try {
-    logger.info('Sending analysis request to IBM Bob API', {
+    const token = await getIBMCloudToken();
+    const projectId = process.env.WATSONX_PROJECT_ID;
+
+    if (!projectId) {
+      throw new ExternalServiceError('WATSONX_PROJECT_ID not configured');
+    }
+
+    logger.info('Sending analysis request to watsonx.ai', {
       fileCount: files.length
     });
 
     const prompt = generatePrompt(files);
-    const apiClient = createApiClient(apiKey);
+    const apiClient = createApiClient(token);
 
     const response = await limiter.schedule(() =>
-      apiClient.post('/analyze', {
-        prompt,
-        files: files.map(f => ({
-          path: f.path,
-          content: f.content
-        }))
+      apiClient.post(`/ml/v1/text/generation?version=${WATSONX_VERSION}`, {
+        model_id: WATSONX_MODEL_ID,
+        input: prompt,
+        project_id: projectId,
+        parameters: {
+          decoding_method: 'greedy',
+          max_new_tokens: 1200,
+          temperature: 0.2
+        }
       })
     );
 
+    const generatedText = response.data?.results?.[0]?.generated_text;
+    if (!generatedText || typeof generatedText !== 'string') {
+      throw new ExternalServiceError('watsonx.ai returned empty response');
+    }
+
+    const stripped = generatedText
+      .replace(/```[a-zA-Z]*\n?([\s\S]*?)```/g, '$1')
+      .trim();
+
+    let parsed: BobApiResponse;
+    try {
+      parsed = JSON.parse(stripped) as BobApiResponse;
+    } catch (parseError) {
+      throw new ExternalServiceError('Failed to parse watsonx.ai JSON response');
+    }
+
     apiSuccessCount++;
-    
-    logger.info('IBM Bob API analysis successful', {
+
+    logger.info('watsonx.ai analysis successful', {
       statusCode: response.status
     });
 
-    return response.data as BobApiResponse;
+    return parsed;
   } catch (error: any) {
     apiFailureCount++;
-    
-    logger.error('IBM Bob API request failed', error, {
+
+    logger.error('watsonx.ai request failed', error, {
       fileCount: files.length,
       successRate: getApiSuccessRate()
     });
 
-    throw new ExternalServiceError(
-      error.response?.data?.message || 'Failed to analyze repository with IBM Bob API'
-    );
+    try {
+      return await loadMockFallback();
+    } catch (fallbackError) {
+      throw new ExternalServiceError(
+        error.response?.data?.message || 'Failed to analyze repository with watsonx.ai'
+      );
+    }
   }
 }
 
