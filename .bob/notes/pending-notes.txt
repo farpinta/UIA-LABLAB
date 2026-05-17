@@ -1,5 +1,0 @@
-{"id":"c6fc5705-7715-4000-9a1a-88fba28487f7","ts":"2026-05-16T16:10:35.112Z","path":"/Users/mac/Documents/dev/UIA-LABLAB/apps/frontend/src/styles/index.css","version":"1.0.0","taskID":"472be2b7-4822-43cf-bce4-bee17bf6ee75"}
-{"id":"ae5c4321-7f55-492e-b022-98df439120b2","ts":"2026-05-16T16:22:03.878Z","path":"/Users/mac/Documents/dev/UIA-LABLAB/CORS_FIX_PLAN.md","version":"1.0.0","taskID":"5084cbc8-3428-4552-b11a-54d2b57125ba"}
-{"id":"5a0599d0-9bd8-4364-ad47-01da8788ae7a","ts":"2026-05-16T16:22:42.262Z","path":"/Users/mac/Documents/dev/UIA-LABLAB/apps/backend/src/server.ts","version":"1.0.0","taskID":"5084cbc8-3428-4552-b11a-54d2b57125ba"}
-{"id":"5e1804d7-9663-4bf5-b82e-77503ee88526","ts":"2026-05-16T16:23:00.877Z","path":"/Users/mac/Documents/dev/UIA-LABLAB/apps/frontend/src/services/apiClient.ts","version":"1.0.0","taskID":"5084cbc8-3428-4552-b11a-54d2b57125ba"}
-{"id":"171dffe5-4e22-4420-9d15-1be770f18b87","ts":"2026-05-16T16:31:27.044Z","path":"/Users/mac/Documents/dev/UIA-LABLAB/apps/backend/src/server.ts","version":"1.0.0","taskID":"5084cbc8-3428-4552-b11a-54d2b57125ba"}
